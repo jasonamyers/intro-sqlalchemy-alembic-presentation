@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Introduction to SQLAlchemy and Alembic</title>
+
+    <meta name="description" content="A quick overview of Generators in PHP 5.5">
+    <meta name="author" content="Jason Myers">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/night.css" id="theme">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/tomorrow-night.css">
+
+    <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+    <script>
+      document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="reveal">
+
+      <!-- Any section element inside of this container is displayed as a slide -->
+      <div class="slides">
+        <section>
+        <h1>SQLAlchemy and Alembic</h1>
+        <h2>ORM, Core and Migrations</h2>
+        <p>
+        <small><a href="http://jasonamyers.com">Jason Myers</a> / <a href="http://twitter.com/jasonamyers">@jasonamyers</a></small>
+        </p>
+        <aside class="notes">Welcome, How do I describe SQLAlchemy?  Well?</aside>
+        </section>
+        <section>
+          <img src="Awesome.gif">
+          </img>
+          <aside class="notes">It has a ton of very, very useful functions and while not everything is not a nail it solves a ton of common problems for me.  Let’s talk about about how its put together.</aside>
+        </section>
+
+        <section>
+          <h2>Architecture</h2>
+          <img src="layers.png"></img>
+          <aside class="notes">The base of SQLAlchemy is the dialect and it’s handshake with the actual drivers via connection pools, the dialect along with schema introspection and typing enables us to use a python friendly SQL Expression language. All of these components are considered the Core of SQL Alchemy. Then we have a very rich ORM built on top of that foundation.  If you TL;DR that ... it’s like GIT</aside>
+          </section>
+
+          <section data-background="idea-01.jpg">
+            <aside class="notes">There is plumbing and porcelain, and both are useful, but you can do most everything you want with the Porcelain. The ORM has some similarities to Django’s ORM, but they have several differences as well. So let’s get started</aside>
+          </section>
+
+        <section>
+          <p>pip install sqlalchemy</p>
+          <p>pip install flask-sqlalchemy</p>
+          <p>bin/paster create -t pyramid_alchemy tutorial</p>
+        <aside class="notes">In many cases you’ll just pip install SQLAlchemy. but if you’re using flask I recommend using the variant just for it and pyramid has a scaffold for SQLAlchemy as well</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          from sqlalchemy import create_engine
+          engine = create_engine(
+              ‘dialect+driver://USER:PASS@HOST:PORT/DB’
+          )</code></pre>
+        <aside class="notes">The first thing we need to do is setup an engine and give it the connection information, from there were ready to actually choose our adventures let’s start with the porcelain </aside>
+        </section>
+
+        <section data-background="idea-01.jpg">
+        <h2>Porcelain</h2>
+        </section>
+
+        <section>
+          <img src="ml.jpg"></img>
+        <aside class="notes">In the ORM we use a model base called Declarative which is a set of directives that assists us with creating classes and define tables relative to those classes.</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        from sqlalchemy.ext.declarative import (
+          declarative_base
+        )
+
+        Base = declarative_base()
+        </code></pre>
+        <aside class="notes">We’ll use Base here for all our class models to inherit from ... so lets define a simple model.</aside>
+        </section>
+
+        <section data-background="rsf.jpg">
+        </section>
+
+        <section>
+          <pre><code>
+          from sqlalchemy import (
+              Column, 
+              Integer,
+              String,
+              Float
+          )
+          from sqlalchemy import ForeignKey
+          from sqlalchemy.orm import (
+              relationship,
+              backref
+          )
+          </code></pre>
+        <aside class="notes">Here we’re going to import the Types we need, a foreignkey and then from the ORM we’ll import the things needed to define a relationship</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        class User(Base):
+            __tablename__ = 'users'
+            id = Column(Integer, primary_key=True)
+            name = Column(String)
+            fullname = Column(String)
+            balance = Column(Float)
+            group = Column(String)
+            addresses = relationship(
+                "Address",
+                order_by="Address.id",
+                backref="user"
+            )
+        </code></pre>
+        </section>
+
+        <section>
+        <pre><code>
+        def __init__(self, name, fullname, balance, group):
+            self.name = name
+            self.fullname = fullname
+            self.balance = balance
+            self.group = group
+        </code></pre>
+        <aside class="notes">A simple init function to assist with creating new objects</aside>
+        </section>
+
+        <section>
+          <img src="psc.jpg"></img>
+        </section>
+
+        <section>
+        <pre><code>
+        Base.metadata.create_all(engine)
+          </code></pre>
+          <aside class="notes">this binds the metadata to the engine and creates the table</aside>
+        </section>
+
+        <section data-background="session.jpg">
+        </section>
+
+
+        <section>
+        <pre><code>
+        from sqlalchemy.orm import sessionmaker
+        Session = sessionmaker(bind=engine)
+        db = Session()
+          </code></pre>
+        <aside class="notes">We import the sessionmaker and bind it to our engine as well. After that we’ll instantiate it. Sessions start stateless, and get connection resources from an engine when objects are persisted or queries are issued.
+        that connection can be associate with a session or a specific table. the connection is essentially a transaction, and is active until commit or rollback
+      It flushes out pending changes before the database is queried again or before a transaction is committed. (Unit of work)</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        user1 = User('Bob', 'Big Bob', 1000000.00, 'Mob')
+        user2 = User('Linda', 'Linda Lu', 100.50, 'Diner')
+        user3 = User('Lil Bob', 'Bobby Jr', 100500.00, 'Mob')
+        user4 = User('Rachael', 'Rachael Rach', 125.50, 'Personal')
+          </code></pre>
+          <aside class="notes">Let’s create some instances</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        db.add(user1)
+        db.delete(user1)
+        db.commit()
+          </code>
+          </pre>
+        <aside class="notes">To save we add them to the session, we could also delete if we liked, then we do a commit() on the session
+        Let’s look at some other session functions</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          db.expunge(user1)
+          db.refresh(user1)
+          db.expire(user1)
+          db.rollback()
+          </code></pre>
+        <aside class="notes">You can also use things remove things from session for modification that doesn’t stick with .expunge
+        Refresh forces an update of an object attributes (Session isolation)
+      Expire marks an object so the next time it is access even with session it is refreshed Rollback cancels an in process transaction</aside>
+        </section>
+
+        <section>
+          <img src="query.jpg"></img>
+        <aside class="notes">So let’s get some data back</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        for user in db.query(User).all():
+              print user.name, user.balance
+          </code>
+          Out[1]: Bob 1000000.0
+        </pre>
+        <aside class="notes">.all() .first() .one()
+        What if we wanted a total balance by group the user is in?</aside>
+        </section>
+
+        <section>
+        <pre><code>
+from sqlalchemy import func
+from sqlalchemy.sql import label
+results = db.query(
+   User.group,
+   label('members', func.count(User.id)),
+   label(
+       'total_balance',
+       func.sum(User.balance)
+   )
+).group_by(User.group).all()
+for result in results:
+   print result.group,
+       result.members,
+       result.total_balance
+          </code>
+          </pre>
+        <aside class="notes">We’d import the func class to get access to those common sql functions like count and sum and label so we could control the name of it.
+Notice: how the label befores the attribute name of the result</aside>
+        </section>
+
+        <section>
+          <img src="grumpy.jpg"></img>
+        <aside class="notes">So how about two related models</aside>
+        </section>
+
+        <section>
+        <pre><code>bob.addresses.append(home_address)</code>
+       <code class="fragment"> bob.addresses</code>
+        <code class="fragment">bob.addresses.filter(Address.type='H').one()
+          </code></pre>
+        <aside class="notes">We treat them like lists! Filter! Notice Class name in filter.</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        db.query(User, Address).filter(User.id==Address.user_id).\
+            filter(Address.email_address=='jack@google.com').all()
+          </code></pre>
+        <aside class="notes">What is we’re not coming from the user model and wanna do a join. You can also use the .join() function</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          @hybrid_property
+          def grand_total(self):
+              rollup_fields = [
+              'merchandise_cost',
+              'tax',
+              'shipping',
+              ]
+              total = sum([self.__getattribute__(x) for x in rollup_fields])
+              return round(total, 2)
+          </code></pre>
+        <aside class="notes">define a property that does something with one or more other attributes or even models.</aside>
+        </section>
+
+        <section data-background="universe.jpg">
+        <aside class="notes">But sometimes the universe is so big ya know, and data doesn’t always fit into a simple mode.</aside>
+        </section>
+
+        <section data-background="idea-01.jpg">
+        <h2>Plumbing</h2>
+        <aside class="notes">that is where the plumbing comes in.</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        from sqlalchemy import create_engine
+        engine = create_engine(
+            ‘dialect+driver://USER:PASS@HOST:PORT/DB’
+        )
+        </code></pre>
+        <aside class="notes">So we start out kind of the same way until we get to model definition.</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          from sqlalchemy import (Table, Column,
+              Integer, String, MetaData, ForeignKey)
+          metadata = MetaData()
+          users = Table('users', metadata,
+              Column('id', Integer, primary_key=True),
+              Column('name', String),
+              Column('fullname', String),
+          )
+          </code></pre>
+        <aside class="notes">notice the slightly different syntax on the users table. It’s no longer like a normal class, but a CSV of Columns.</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        Base.metadata.create_all(engine)
+        conn = engine.connect()
+          </code></pre>
+        <aside class="notes">This is basically the same, but we won’t be using the sessionmaker at all.</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        ins = users.insert().values(name='jack',
+                                 fullname='Jack Bell')
+        result = conn.execute(ins)
+        ins = users.insert()
+        conn.execute(ins, id=2, name='wendy',
+            fullname='Wendy McDonalds')
+          </code></pre>
+        <aside class="notes">We can do inserts a few way. In the top two lines, we add the values to the users instance, in the bottom part we add the parameters to the query execution.</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        conn.execute(addresses.insert(), [
+            {'user_id': 1,
+                'email_address' : 'j@y.com'},
+            {'user_id': 1,
+                'email_address' : 'j@m.com'},
+        ])
+          </code></pre>
+        <aside class="notes">We can also insert multiple records like above. Transactions can be manually started, but by default wrap each execute. But what if we don’t know the table structure. (Explain work and ACS for NashInclusivity)</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        def build_table(table_name):
+            return Table(
+                table_name,
+                metadata,
+                autoload=True,
+                autoload_with=engine
+            )
+        </code></pre>
+        <aside class="notes">This introspection makes a table from a given engine and metadata collection.</aside>
+        </section>
+
+
+        <section>
+          <pre><code>
+          build_table('census')
+          unavailable_fields = [c.name for c in t.c if isinstance(c.type, NullType)]
+          </code></pre>
+          <aside class="notes">Once you build the table, it’s important to check for fields that have a null type as they can have an unexpected affect on code. NullType fields are found because a column type doesn’t match a SQLAlchemy column type in the dialect being used.</aside>
+        </section>
+
+        <section data-background="dialect.jpg">
+          <aside class="notes">in addition to column types, the dialects define sql commands, their parameters loosely they are validated by the database driver and by sending the actual command to the DB.</aside>
+        </section>
+
+        <section>
+          <ul>
+            <li>Informix</li>
+            <li>MS SQL</li>
+            <li>Oracle</li>
+            <li>Postgres</li>
+            <li>SQLite</li>
+            <li>Custom</li>
+          </ul>
+          <aside class="notes">Most common systems are covered, and customizing them is fairly easy. For example at work we use redshift, and we’ve been writing a sqlalchemy_redshift dialect. Which you can download on github. So let’s query some data...</aside>
+        </section>
+
+        <section>
+        <pre><code>
+        s = select(
+            [
+                g.t.c.race,
+                g.t.c.factor,
+                func.sum(g.t.c.value).label('summed')
+            ], ).where(and_(
+                g.t.c.type == 'POVERTY',
+                g.t.c.value != 0)).group_by(
+                    g.t.c.race,
+                    g.t.c.factor).order_by(
+                        g.t.c.race,
+                        g.t.c.factor)
+          </code></pre>
+        <aside class="notes">so where we have a g.t is a table .c represents the columns collection, and race is the column name
+We can still use func and label here notice the different and_ in the where clause a tuple of conditions
+then simple group and order by.</aside>
+        </section>
+
+        <section>
+        <pre><code>
+          s = select(
+              [
+                  table.c.discharge_year,
+                  func.count(1).label(
+                      'patient_discharges'),
+                  table.c.zip_code,
+              ], table.c.discharge_year.in_(years)
+          ).group_by(table.c.discharge_year)
+          s = s.where(table.c.hospital_name == provider)
+          if 'total_charges' not in unavailable_fields:
+              s = s.column(
+                      func.sum(table.c.total_charges
+                      ).label('patient_charges')
+              )
+          s = s.group_by(table.c.zip_code)
+          s = s.order_by('discharges DESC')
+          cases = conn.execute(s).fetchall()
+          </code></pre>
+        <aside class="notes">What’s great is we can do this a step at a time and add conditionals to create kind of a query builder. Some datasets have total_charges if they do we add those to the result.</aside>
+        </section>
+
+        <section>
+          <img src="migration.jpg"></img>
+        <aside class="notes">Okay now let’s move on to migrations.</aside>
+        </section>
+
+        <section>
+          <p>pip install alembic</p>
+        <aside class="notes"></aside>
+        </section>
+
+        <section>
+          <p>alembic init alembic</p>
+        <aside class="notes">to prepare our project for using alembic go to the project root and init alembic.</aside>
+        </section>
+
+        <section>
+          <img src="alembic.jpg"></img>
+          <aside class="notes">this creates a folder structure like show here. We need to edit alembic.ini and env.py</aside>
+        </section>
+
+        <section>
+          <img src="alembic-dir.jpg"></img>
+          <aside class="notes">and versions holds all our migrations.</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          # A generic, single database configuration.
+          [alembic]
+          # path to migration scripts
+          script_location = alembic
+          # template used to generate migration files
+          # file_template = %%(rev)s_%%(slug)s
+          # set to 'true' to run the environment during
+          # the 'revision' command, regardless of
+          autogenerate
+          # revision_environment = false
+          sqlalchemy.url = driver://user:pass@localhost/dbname
+          </code></pre>
+          <aside class="notes">in Alembic.ini we can define the sqlalchemy.url. I try to avoid this and leverage the sqlalchemy configuration in my application. But if you want to hard code it you can do so here.</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          from glu import db
+          target_metadata = db.metadata
+          def run_migrations_online():
+              alembic_config =
+          config.get_section(config.config_ini_section)
+              from config import SQLALCHEMY_DATABASE_URI
+              alembic_config['sqlalchemy.url'] =
+                                SQLALCHEMY_DATABASE_URI
+              engine = engine_from_config(
+                  alembic_config,
+                  prefix='sqlalchemy.',
+                  poolclass=pool.NullPool
+          )
+          </code></pre>
+          <aside class="notes">In env py, we need to import the database session and metadata for automigrations to work. Next I customize the run_migrations_online session to read the SQLALCHEMY_DATABASE_URI from my applications config file.</aside>
+        </section>
+
+        <section data-background="offtherails.jpg">
+          <aside class="notes">Okay let’s create some revisions.</aside>
+        </section>
+
+        <section>
+          <p>alembic revision -m "initial"</p>
+          <aside class="notes">I always create a base revision that has no changes I do this regardless if I’m starting from scratch or an existing database. It gives me a point to return to.</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          def upgrade():
+              op.create_table('users_to_users',
+                  sa.Column('patient_user_id', sa.Integer(),
+                      nullable=False),
+                  sa.Column('provider_user_id',
+                      sa.Integer(), nullable=False),
+                  sa.ForeignKeyConstraint(
+                      ['patient_user_id'], ['users.id'], ),
+                  sa.ForeignKeyConstraint(
+                      ['provider_user_id'], ['users.id'], ),
+                  sa.PrimaryKeyConstraint(
+                      'patient_user_id', 'provider_user_id')
+              )
+              op.alter_column(u'reminders', u'user_created',
+                  nullable=True)
+          </code></pre>
+          <aside class="notes">Let’s look at an upgrade. It features several operations. You can also embed SQL code directly moves us to the new db schema.</aside>
+        </section>
+
+        <section>
+          <pre><code>
+          def downgrade():
+              op.alter_column(
+                  u'reminders',
+                  u'user_created',
+                  existing_type=mysql.TINYINT(display_width=1),
+                  nullable=False)
+              op.drop_table('users_to_users')
+          </code></pre>
+          <aside class="notes">Returns to prior state</aside>
+        </section>
+
+        <section>
+          <p>alembic upgrade head</p>
+          <aside class="notes">This upgrades us to the highest available migration.</aside>
+        </section>
+
+        <section>
+          <p>alembic revision --autogenerate -m "Added account table"</p>
+          <aside class="notes">To auto generate a migration we use a --autogenerate, and it works pretty well...</aside>
+        </section>
+
+        <section>
+          <ul>
+            <li>Table (adds/removes)</li>
+            <li>Columns (adds/removes)</li>
+            <li>Nullable changes</li>
+          </ul>
+        </section>
+
+        <section>
+          <img src="gotcha.png"></img>
+          <aside class="notes">Except...</aside>
+        </section>
+
+        <section>
+          <ul>
+            <li>Optionally: Column Type changes<br>compare_type=True</li>
+            <li>No Name changes on Columns or Table</li>
+          </ul>
+          <aside class="notes">You have to tell it to detect column type changes and it doesn’t pick up name changes.</aside>
+        </section>
+
+        <section data-background="wat.jpg">
+        </section>
+
+        <section>
+          <ul>
+            <li>alembic current</li>
+            <li>alembic upgrade +2</li>
+            <li>alembic downgrade -1</li>
+            <li>alembic upgrade ae1</li>
+            <li>alembic upgrade 1 --sql > file.sql</li>
+            <li>alembic history</li>
+          </ul>
+          <aside class="notes">Moving through revisions is pretty simple. alembic current shows us where we are upgrade +2 moves us forward to revisions
+          downgrade -1 moves us back one
+        upgrade ae1 moves us up to that partially matched revision
+      We can also just generate the SQL for the migration
+    Finally we can see the history of our migrations for example</aside>
+        </section>
+
+        <section>
+          <pre>
+          2806761df139 -> 1e9831c8fa7d (head), Adding tags to ...
+          2806761df139 -> 46a1d4de6e04 (head), Added timezone ...
+          4f7119855daf -> 2806761df139 (branchpoint), Added Pr...
+          377addf23edb -> 4f7119855daf, Added user_created to ...
+          483d9a63fbf5 -> 377addf23edb, Adding claimed to user...
+          464ba41d7ad8 -> 483d9a63fbf5, Adding username/passwo...
+          2cfd9dc89267 -> 464ba41d7ad8, Adding Intercom.io
+          d4774a3ce8 -> 2cfd9dc89267, Seperating Roles and Use...
+          None -> d4774a3ce8, Base
+          </pre>
+          <aside class="notes">Here is the history of one of my applications. You can see where I branched and heads etc</aside>
+        </section>
+
+        <section data-background="questions.jpg">
+        <h1>THE END</h1>
+        <h3>@jasonamyers</h3>
+        </section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.min.js"></script>
+
+    <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+        transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+        { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+        { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+        { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+        { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+        { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+        { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+        // { src: 'plugin/leap/leap.js', async: true }
+        // { src: 'plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }
+        // { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+        ]
+        });
+
+      </script>
+
+    </body>
+  </html>
