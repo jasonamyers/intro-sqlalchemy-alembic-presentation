@@ -175,7 +175,7 @@
         user1 = User('Bob', 'Big Bob', 1000000.00, 'Mob')
         user2 = User('Linda', 'Linda Lu', 100.50, 'Diner')
         user3 = User('Lil Bob', 'Bobby Jr', 100500.00, 'Mob')
-        user4 = User('Rachael', 'Rachael Rach', 125.50, 'Personal')
+        user4 = User('Rachael', 'Rachael Rach', 125.50, 'Person')
           </code></pre>
           <aside class="notes">Let’s create some instances</aside>
         </section>
@@ -217,6 +217,21 @@
         </pre>
         <aside class="notes">.all() .first() .one()
         What if we wanted a total balance by group the user is in?</aside>
+        </section>
+
+        <section>
+        <pre><code>SELECT entries.id AS entries_id, entries.user_id AS entries_user_id,
+entries.phone AS entries_phone, entries.measurement AS
+entries_measurement, entries.insulin AS entries_insulin,
+entries.insulin_type AS entries_insulin_type, entries.carbs
+AS entries_carbs, entries.tag AS entries_tag, entries.three_sixty_id
+AS entries_three_sixty_id, entries.entry_time AS entries_entry_time,
+entries.created_time AS entries_created_time
+FROM entries
+WHERE entries.user_id = :user_id_1
+AND entries.entry_time > :entry_time_1 ORDER BY ID DESC
+</code></pre>
+        <aside class="notes">One question I always get asked it... what does SQL look like! well it's clean!</aside>
         </section>
 
         <section>
