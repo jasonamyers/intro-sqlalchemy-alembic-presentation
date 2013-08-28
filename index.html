@@ -68,11 +68,10 @@
         </section>
 
         <section>
-          <pre><code>
-          from sqlalchemy import create_engine
-          engine = create_engine(
-              ‘dialect+driver://USER:PASS@HOST:PORT/DB’
-          )</code></pre>
+          <pre><code>from sqlalchemy import create_engine
+engine = create_engine(
+    ‘dialect+driver://USER:PASS@HOST:PORT/DB’
+)</code></pre>
         <aside class="notes">The first thing we need to do is setup an engine and give it the connection information, from there were ready to actually choose our adventures let’s start with the porcelain </aside>
         </section>
 
@@ -86,13 +85,11 @@
         </section>
 
         <section>
-        <pre><code>
-        from sqlalchemy.ext.declarative import (
-          declarative_base
-        )
+        <pre><code>from sqlalchemy.ext.declarative import (
+  declarative_base
+)
 
-        Base = declarative_base()
-        </code></pre>
+Base = declarative_base()</code></pre>
         <aside class="notes">We’ll use Base here for all our class models to inherit from ... so lets define a simple model.</aside>
         </section>
 
@@ -100,47 +97,41 @@
         </section>
 
         <section>
-          <pre><code>
-          from sqlalchemy import (
-              Column, 
-              Integer,
-              String,
-              Float
-          )
-          from sqlalchemy import ForeignKey
-          from sqlalchemy.orm import (
-              relationship,
-              backref
-          )
-          </code></pre>
+          <pre><code>from sqlalchemy import (
+    Column, 
+    Integer,
+    String,
+    Float
+)
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import (
+    relationship,
+    backref
+)</code></pre>
         <aside class="notes">Here we’re going to import the Types we need, a foreignkey and then from the ORM we’ll import the things needed to define a relationship</aside>
         </section>
 
         <section>
-        <pre><code>
-        class User(Base):
-            __tablename__ = 'users'
-            id = Column(Integer, primary_key=True)
-            name = Column(String)
-            fullname = Column(String)
-            balance = Column(Float)
-            group = Column(String)
-            addresses = relationship(
-                "Address",
-                order_by="Address.id",
-                backref="user"
-            )
-        </code></pre>
+        <pre><code>class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    fullname = Column(String)
+    balance = Column(Float)
+    group = Column(String)
+    addresses = relationship(
+        "Address",
+        order_by="Address.id",
+        backref="user"
+    )</code></pre>
         </section>
 
         <section>
-        <pre><code>
-        def __init__(self, name, fullname, balance, group):
-            self.name = name
-            self.fullname = fullname
-            self.balance = balance
-            self.group = group
-        </code></pre>
+        <pre><code>def __init__(self, name, fullname, balance, group):
+    self.name = name
+    self.fullname = fullname
+    self.balance = balance
+    self.group = group</code></pre>
         <aside class="notes">A simple init function to assist with creating new objects</aside>
         </section>
 
@@ -149,8 +140,7 @@
         </section>
 
         <section>
-        <pre><code>
-        Base.metadata.create_all(engine)
+        <pre><code>Base.metadata.create_all(engine)
           </code></pre>
           <aside class="notes">this binds the metadata to the engine and creates the table</aside>
         </section>
@@ -160,44 +150,36 @@
 
 
         <section>
-        <pre><code>
-        from sqlalchemy.orm import sessionmaker
-        Session = sessionmaker(bind=engine)
-        db = Session()
-          </code></pre>
+        <pre><code>from sqlalchemy.orm import sessionmaker
+Session = sessionmaker(bind=engine)
+db = Session()</code></pre>
         <aside class="notes">We import the sessionmaker and bind it to our engine as well. After that we’ll instantiate it. Sessions start stateless, and get connection resources from an engine when objects are persisted or queries are issued.
         that connection can be associate with a session or a specific table. the connection is essentially a transaction, and is active until commit or rollback
       It flushes out pending changes before the database is queried again or before a transaction is committed. (Unit of work)</aside>
         </section>
 
         <section>
-        <pre><code>
-        user1 = User('Bob', 'Big Bob', 1000000.00, 'Mob')
-        user2 = User('Linda', 'Linda Lu', 100.50, 'Diner')
-        user3 = User('Lil Bob', 'Bobby Jr', 100500.00, 'Mob')
-        user4 = User('Rachael', 'Rachael Rach', 125.50, 'Person')
-          </code></pre>
+        <pre><code>user1 = User('Bob', 'Big Bob', 1000000.00, 'Mob')
+user2 = User('Linda', 'Linda Lu', 100.50, 'Diner')
+user3 = User('Lil Bob', 'Bobby Jr', 100500.00, 'Mob')
+user4 = User('Rachael', 'Rachael Rach', 125.50, 'Personal')</code></pre>
           <aside class="notes">Let’s create some instances</aside>
         </section>
 
         <section>
-        <pre><code>
-        db.add(user1)
-        db.delete(user1)
-        db.commit()
-          </code>
+        <pre><code class="fragment">db.add(user1)</code></pre>
+<pre><code class="fragment">db.commit()</code></pre>
+<pre><code class="fragment">db.delete(user1)</code>
           </pre>
         <aside class="notes">To save we add them to the session, we could also delete if we liked, then we do a commit() on the session
         Let’s look at some other session functions</aside>
         </section>
 
         <section>
-          <pre><code>
-          db.expunge(user1)
-          db.refresh(user1)
-          db.expire(user1)
-          db.rollback()
-          </code></pre>
+          <pre><code>db.expunge(user1)</code></pre>
+<pre><code class="fragment">db.refresh(user1)
+db.expire(user1)</code></pre>
+<pre><code class="fragment">db.rollback()</code></pre>
         <aside class="notes">You can also use things remove things from session for modification that doesn’t stick with .expunge
         Refresh forces an update of an object attributes (Session isolation)
       Expire marks an object so the next time it is access even with session it is refreshed Rollback cancels an in process transaction</aside>
@@ -209,34 +191,44 @@
         </section>
 
         <section>
-        <pre><code>
-        for user in db.query(User).all():
-              print user.name, user.balance
-          </code>
-          Out[1]: Bob 1000000.0
+        <pre><code>for user in db.query(User).all():
+    print user.name, user.balance</code>
+Out[1]: Bob 1000000.0
         </pre>
         <aside class="notes">.all() .first() .one()
         What if we wanted a total balance by group the user is in?</aside>
         </section>
 
         <section>
-        <pre><code>SELECT entries.id AS entries_id, entries.user_id AS entries_user_id,
-entries.phone AS entries_phone, entries.measurement AS
-entries_measurement, entries.insulin AS entries_insulin,
-entries.insulin_type AS entries_insulin_type, entries.carbs
-AS entries_carbs, entries.tag AS entries_tag, entries.three_sixty_id
-AS entries_three_sixty_id, entries.entry_time AS entries_entry_time,
-entries.created_time AS entries_created_time
+        <pre><code>entries = db.session.query(Entries).filter_by(user_id=user.id)\
+    .filter(Entries.entry_time >
+        (datetime.datetime.utcnow() - datetime.timedelta(30))
+).order_by('ID DESC').all()</code></pre>
+        <aside class="notes">One question I always get asked it... what does SQL look like! well it's clean!</aside>
+        </section>
+
+        <section>
+        <pre><code>SELECT entries.id AS entries_id,
+    entries.user_id AS entries_user_id,
+    entries.phone AS entries_phone,
+    entries.measurement AS entries_measurement,
+    entries.insulin AS entries_insulin,
+    entries.insulin_type AS entries_insulin_type,
+    entries.carbs AS entries_carbs,
+    entries.tag AS entries_tag,
+    entries.three_sixty_id AS entries_three_sixty_id,
+    entries.entry_time AS entries_entry_time,
+    entries.created_time AS entries_created_time
 FROM entries
 WHERE entries.user_id = :user_id_1
-AND entries.entry_time > :entry_time_1 ORDER BY ID DESC
+    AND entries.entry_time > :entry_time_1
+ORDER BY ID DESC
 </code></pre>
         <aside class="notes">One question I always get asked it... what does SQL look like! well it's clean!</aside>
         </section>
 
         <section>
-        <pre><code>
-from sqlalchemy import func
+        <pre><code>from sqlalchemy import func
 from sqlalchemy.sql import label
 results = db.query(
    User.group,
@@ -249,8 +241,7 @@ results = db.query(
 for result in results:
    print result.group,
        result.members,
-       result.total_balance
-          </code>
+       result.total_balance</code>
           </pre>
         <aside class="notes">We’d import the func class to get access to those common sql functions like count and sum and label so we could control the name of it.
 Notice: how the label befores the attribute name of the result</aside>
@@ -263,32 +254,31 @@ Notice: how the label befores the attribute name of the result</aside>
 
         <section>
         <pre><code>bob.addresses.append(home_address)</code>
-       <code class="fragment"> bob.addresses</code>
-        <code class="fragment">bob.addresses.filter(Address.type='H').one()
-          </code></pre>
+       <code class="fragment">bob.addresses</code>
+        <code class="fragment">bob.addresses.filter(Address.type='H').one()</code></pre>
         <aside class="notes">We treat them like lists! Filter! Notice Class name in filter.</aside>
         </section>
 
         <section>
-        <pre><code>
-        db.query(User, Address).filter(User.id==Address.user_id).\
-            filter(Address.email_address=='jack@google.com').all()
-          </code></pre>
+        <pre><code>query = db.query(User, Address).filter(User.id==Address.user_id)
+query = query.filter(Address.email_address=='jack@goog.com').all()</code></pre>
         <aside class="notes">What is we’re not coming from the user model and wanna do a join. You can also use the .join() function</aside>
         </section>
 
+        <section data-background="platypus.jpg">
+        <aside class="notes">Sometimes you just need to do something... well... ODD!</aside>
+        </section>
+
         <section>
-          <pre><code>
-          @hybrid_property
-          def grand_total(self):
-              rollup_fields = [
-              'merchandise_cost',
-              'tax',
-              'shipping',
-              ]
-              total = sum([self.__getattribute__(x) for x in rollup_fields])
-              return round(total, 2)
-          </code></pre>
+          <pre><code>@hybrid_property
+def grand_total(self):
+    rollup_fields = [
+    'merchandise_cost',
+    'tax',
+    'shipping',
+    ]
+    total = sum([self.__getattribute__(x) for x in rollup_fields])
+    return round(total, 2)</code></pre>
         <aside class="notes">define a property that does something with one or more other attributes or even models.</aside>
         </section>
 
@@ -302,80 +292,64 @@ Notice: how the label befores the attribute name of the result</aside>
         </section>
 
         <section>
-        <pre><code>
-        from sqlalchemy import create_engine
-        engine = create_engine(
-            ‘dialect+driver://USER:PASS@HOST:PORT/DB’
-        )
-        </code></pre>
+        <pre><code>from sqlalchemy import create_engine
+engine = create_engine(
+    ‘dialect+driver://USER:PASS@HOST:PORT/DB’
+)</code></pre>
         <aside class="notes">So we start out kind of the same way until we get to model definition.</aside>
         </section>
 
         <section>
-          <pre><code>
-          from sqlalchemy import (Table, Column,
-              Integer, String, MetaData, ForeignKey)
-          metadata = MetaData()
-          users = Table('users', metadata,
-              Column('id', Integer, primary_key=True),
-              Column('name', String),
-              Column('fullname', String),
-          )
-          </code></pre>
+          <pre><code>from sqlalchemy import (Table, Column,
+    Integer, String, MetaData, ForeignKey)
+metadata = MetaData()
+users = Table('users', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('name', String),
+    Column('fullname', String),
+)</code></pre>
         <aside class="notes">notice the slightly different syntax on the users table. It’s no longer like a normal class, but a CSV of Columns.</aside>
         </section>
 
         <section>
-        <pre><code>
-        Base.metadata.create_all(engine)
-        conn = engine.connect()
-          </code></pre>
+        <pre><code>Base.metadata.create_all(engine)
+conn = engine.connect()</code></pre>
         <aside class="notes">This is basically the same, but we won’t be using the sessionmaker at all.</aside>
         </section>
 
         <section>
-        <pre><code>
-        ins = users.insert().values(name='jack',
-                                 fullname='Jack Bell')
-        result = conn.execute(ins)
-        ins = users.insert()
-        conn.execute(ins, id=2, name='wendy',
-            fullname='Wendy McDonalds')
-          </code></pre>
+        <pre><code class="fragment">ins = users.insert().values(name='jack', fullname='Jack Bell')
+result = conn.execute(ins)</code></pre>
+<pre><code class="fragment">ins = users.insert()
+conn.execute(ins, id=2, name='wendy', fullname='Wendy McDonalds')</code></pre>
         <aside class="notes">We can do inserts a few way. In the top two lines, we add the values to the users instance, in the bottom part we add the parameters to the query execution.</aside>
         </section>
 
         <section>
-        <pre><code>
-        conn.execute(addresses.insert(), [
-            {'user_id': 1,
-                'email_address' : 'j@y.com'},
-            {'user_id': 1,
-                'email_address' : 'j@m.com'},
-        ])
-          </code></pre>
+        <pre><code>conn.execute(addresses.insert(), [
+    {'user_id': 1, 'email_address' : 'j@y.com'},
+    {'user_id': 1, 'email_address' : 'j@m.com'},
+])</code></pre>
         <aside class="notes">We can also insert multiple records like above. Transactions can be manually started, but by default wrap each execute. But what if we don’t know the table structure. (Explain work and ACS for NashInclusivity)</aside>
         </section>
 
         <section>
-        <pre><code>
-        def build_table(table_name):
-            return Table(
-                table_name,
-                metadata,
-                autoload=True,
-                autoload_with=engine
-            )
-        </code></pre>
+        <pre><code>def build_table(table_name):
+return Table(
+    table_name,
+    metadata,
+    autoload=True,
+    autoload_with=engine
+)</code></pre>
         <aside class="notes">This introspection makes a table from a given engine and metadata collection.</aside>
         </section>
 
 
         <section>
-          <pre><code>
-          build_table('census')
-          unavailable_fields = [c.name for c in t.c if isinstance(c.type, NullType)]
-          </code></pre>
+          <pre><code>build_table('census')
+unavailable_fields = [
+    c.name for c in t.c if isinstance(c.type, NullType)
+]</code></pre>
           <aside class="notes">Once you build the table, it’s important to check for fields that have a null type as they can have an unexpected affect on code. NullType fields are found because a column type doesn’t match a SQLAlchemy column type in the dialect being used.</aside>
         </section>
 
@@ -396,45 +370,95 @@ Notice: how the label befores the attribute name of the result</aside>
         </section>
 
         <section>
-        <pre><code>
-        s = select(
-            [
-                g.t.c.race,
-                g.t.c.factor,
-                func.sum(g.t.c.value).label('summed')
-            ], ).where(and_(
-                g.t.c.type == 'POVERTY',
-                g.t.c.value != 0)).group_by(
-                    g.t.c.race,
-                    g.t.c.factor).order_by(
-                        g.t.c.race,
-                        g.t.c.factor)
-          </code></pre>
+        <pre><code>class UnloadFromSelect(Executable, ClauseElement):
+
+    def __init__(self, select, bucket, access_key, secret_key):
+        self.select = select
+        self.bucket = bucket
+        self.access_key = access_key
+        self.secret_key = secret_key
+
+@compiles(UnloadFromSelect)
+def visit_unload_from_select(element, compiler, **kw):
+    return "unload ('%(query)s') to '%(bucket)s'
+        credentials 'aws_access_key_id=%(access_key)s;
+        aws_secret_access_key=%(secret_key)s' delimiter ','
+        addquotes allowoverwrite" % {
+        'query': compiler.process(element.select,
+              unload_select=True, literal_binds=True),
+        'bucket': element.bucket,
+        'access_key': element.access_key,
+        'secret_key': element.secret_key,
+    }</code></pre>
+        <aside class="notes">Here is an example of a single statement for a custom dialect. It establishes an unload from command as seen in Amazon Redshift</aside>
+        </section>
+
+        <section>
+        <pre><code>unload = UnloadFromSelect(
+    select([fields]),
+    '/'.join(['s3:/', BUCKET, filename]),
+    ACCESS_KEY,
+    SECRET_KEY
+)</code></pre>
+        <aside class="notes">Example Usage</aside>
+        </section>
+
+        <section>
+        <pre><code>unload (
+  'select * from venue where venueid in (
+        select venueid from venue order by venueid desc limit 10)'
+)
+to 's3://mybucket/venue_pipe_'
+credentials 'aws_access_key_id=ACCESS_KEY;
+  aws_secret_access_key=SECRET_KEY';</code></pre>
+        <aside class="notes">Generated Statement</aside>
+        </section>
+
+
+        <section>
+        <pre><code>s = select(
+    [
+        t.c.race,
+        t.c.factor,
+        func.sum(g.t.c.value).label('summed')
+    ], t.c.race > 0
+).where(
+    and_(
+        t.c.type == 'POVERTY',
+        t.c.value != 0
+    )
+).group_by(
+    t.c.race,
+    t.c.factor
+).order_by(
+    t.c.race,
+    t.c.factor)</code></pre>
         <aside class="notes">so where we have a g.t is a table .c represents the columns collection, and race is the column name
 We can still use func and label here notice the different and_ in the where clause a tuple of conditions
 then simple group and order by.</aside>
         </section>
 
         <section>
-        <pre><code>
-          s = select(
-              [
-                  table.c.discharge_year,
-                  func.count(1).label(
-                      'patient_discharges'),
-                  table.c.zip_code,
-              ], table.c.discharge_year.in_(years)
-          ).group_by(table.c.discharge_year)
-          s = s.where(table.c.hospital_name == provider)
-          if 'total_charges' not in unavailable_fields:
-              s = s.column(
-                      func.sum(table.c.total_charges
-                      ).label('patient_charges')
-              )
-          s = s.group_by(table.c.zip_code)
-          s = s.order_by('discharges DESC')
-          cases = conn.execute(s).fetchall()
-          </code></pre>
+        <pre><code>s = select(
+    [
+        table.c.discharge_year,
+        func.count(1).label(
+            'patient_discharges'),
+        table.c.zip_code,
+    ], table.c.discharge_year.in_(years)
+).group_by(table.c.discharge_year)
+s = s.where(table.c.hospital_name == provider)
+
+if 'total_charges' not in unavailable_fields:
+    s = s.column(
+            func.sum(table.c.total_charges
+            ).label('patient_charges')
+    )
+
+s = s.group_by(table.c.zip_code)
+s = s.order_by('discharges DESC')
+
+cases = conn.execute(s).fetchall()</code></pre>
         <aside class="notes">What’s great is we can do this a step at a time and add conditionals to create kind of a query builder. Some datasets have total_charges if they do we add those to the result.</aside>
         </section>
 
@@ -464,38 +488,32 @@ then simple group and order by.</aside>
         </section>
 
         <section>
-          <pre><code>
-          # A generic, single database configuration.
-          [alembic]
-          # path to migration scripts
-          script_location = alembic
-          # template used to generate migration files
-          # file_template = %%(rev)s_%%(slug)s
-          # set to 'true' to run the environment during
-          # the 'revision' command, regardless of
-          autogenerate
-          # revision_environment = false
-          sqlalchemy.url = driver://user:pass@localhost/dbname
-          </code></pre>
+          <pre><code># A generic, single database configuration.
+[alembic]
+# path to migration scripts
+script_location = alembic
+# template used to generate migration files
+# file_template = %%(rev)s_%%(slug)s
+# set to 'true' to run the environment during
+# the 'revision' command, regardless of
+autogenerate
+# revision_environment = false
+sqlalchemy.url = driver://user:pass@localhost/dbname</code></pre>
           <aside class="notes">in Alembic.ini we can define the sqlalchemy.url. I try to avoid this and leverage the sqlalchemy configuration in my application. But if you want to hard code it you can do so here.</aside>
         </section>
 
         <section>
-          <pre><code>
-          from glu import db
-          target_metadata = db.metadata
-          def run_migrations_online():
-              alembic_config =
-          config.get_section(config.config_ini_section)
-              from config import SQLALCHEMY_DATABASE_URI
-              alembic_config['sqlalchemy.url'] =
-                                SQLALCHEMY_DATABASE_URI
-              engine = engine_from_config(
-                  alembic_config,
-                  prefix='sqlalchemy.',
-                  poolclass=pool.NullPool
-          )
-          </code></pre>
+          <pre><code>from glu import db
+target_metadata = db.metadata
+def run_migrations_online():
+    alembic_config = config.get_section(config.config_ini_section)
+    from config import SQLALCHEMY_DATABASE_URI
+    alembic_config['sqlalchemy.url'] = SQLALCHEMY_DATABASE_URI
+    engine = engine_from_config(
+        alembic_config,
+        prefix='sqlalchemy.',
+        poolclass=pool.NullPool
+)</code></pre>
           <aside class="notes">In env py, we need to import the database session and metadata for automigrations to work. Next I customize the run_migrations_online session to read the SQLALCHEMY_DATABASE_URI from my applications config file.</aside>
         </section>
 
@@ -509,36 +527,25 @@ then simple group and order by.</aside>
         </section>
 
         <section>
-          <pre><code>
-          def upgrade():
-              op.create_table('users_to_users',
-                  sa.Column('patient_user_id', sa.Integer(),
-                      nullable=False),
-                  sa.Column('provider_user_id',
-                      sa.Integer(), nullable=False),
-                  sa.ForeignKeyConstraint(
-                      ['patient_user_id'], ['users.id'], ),
-                  sa.ForeignKeyConstraint(
-                      ['provider_user_id'], ['users.id'], ),
-                  sa.PrimaryKeyConstraint(
-                      'patient_user_id', 'provider_user_id')
-              )
-              op.alter_column(u'reminders', u'user_created',
-                  nullable=True)
-          </code></pre>
+          <pre><code>def upgrade():
+  op.create_table('users_to_users',
+      sa.Column('patient_user_id', sa.Integer(), nullable=False),
+      sa.Column('provider_user_id', sa.Integer(), nullable=False),
+      sa.ForeignKeyConstraint(['patient_user_id'], ['users.id'],),
+      sa.ForeignKeyConstraint(['provider_user_id'], ['users.id'],),
+      sa.PrimaryKeyConstraint('patient_user_id','provider_user_id')
+  )
+
+  op.alter_column(u'reminders', u'user_created', nullable=True)</code></pre>
           <aside class="notes">Let’s look at an upgrade. It features several operations. You can also embed SQL code directly moves us to the new db schema.</aside>
         </section>
 
         <section>
-          <pre><code>
-          def downgrade():
-              op.alter_column(
-                  u'reminders',
-                  u'user_created',
-                  existing_type=mysql.TINYINT(display_width=1),
-                  nullable=False)
-              op.drop_table('users_to_users')
-          </code></pre>
+          <pre><code>def downgrade():
+  op.alter_column(u'reminders', u'user_created',
+      existing_type=mysql.TINYINT(display_width=1), nullable=False
+  )
+  op.drop_table('users_to_users')</code></pre>
           <aside class="notes">Returns to prior state</aside>
         </section>
 
@@ -578,12 +585,12 @@ then simple group and order by.</aside>
 
         <section>
           <ul>
-            <li>alembic current</li>
-            <li>alembic upgrade +2</li>
-            <li>alembic downgrade -1</li>
-            <li>alembic upgrade ae1</li>
-            <li>alembic upgrade 1 --sql > file.sql</li>
-            <li>alembic history</li>
+            <li class="fragment">alembic current</li>
+            <li class="fragment">alembic upgrade +2</li>
+            <li class="fragment">alembic downgrade -1</li>
+            <li class="fragment">alembic upgrade ae1</li>
+            <li class="fragment">alembic upgrade 1 --sql > file.sql</li>
+            <li class="fragment">alembic history</li>
           </ul>
           <aside class="notes">Moving through revisions is pretty simple. alembic current shows us where we are upgrade +2 moves us forward to revisions
           downgrade -1 moves us back one
@@ -593,17 +600,15 @@ then simple group and order by.</aside>
         </section>
 
         <section>
-          <pre>
-          2806761df139 -> 1e9831c8fa7d (head), Adding tags to ...
-          2806761df139 -> 46a1d4de6e04 (head), Added timezone ...
-          4f7119855daf -> 2806761df139 (branchpoint), Added Pr...
-          377addf23edb -> 4f7119855daf, Added user_created to ...
-          483d9a63fbf5 -> 377addf23edb, Adding claimed to user...
-          464ba41d7ad8 -> 483d9a63fbf5, Adding username/passwo...
-          2cfd9dc89267 -> 464ba41d7ad8, Adding Intercom.io
-          d4774a3ce8 -> 2cfd9dc89267, Seperating Roles and Use...
-          None -> d4774a3ce8, Base
-          </pre>
+          <pre>2806761df139 -> 1e9831c8fa7d (head), Adding tags to ...
+2806761df139 -> 46a1d4de6e04 (head), Added timezone ...
+4f7119855daf -> 2806761df139 (branchpoint), Added Pr...
+377addf23edb -> 4f7119855daf, Added user_created to ...
+483d9a63fbf5 -> 377addf23edb, Adding claimed to user...
+464ba41d7ad8 -> 483d9a63fbf5, Adding username/passwo...
+2cfd9dc89267 -> 464ba41d7ad8, Adding Intercom.io
+d4774a3ce8 -> 2cfd9dc89267, Seperating Roles and Use...
+None -> d4774a3ce8, Base</pre>
           <aside class="notes">Here is the history of one of my applications. You can see where I branched and heads etc</aside>
         </section>
 
@@ -629,6 +634,7 @@ then simple group and order by.</aside>
         history: true,
         center: true,
 
+
         theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
         transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
 
@@ -639,7 +645,7 @@ then simple group and order by.</aside>
         { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
         { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
         { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
-        { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+        { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
         // { src: 'plugin/leap/leap.js', async: true }
         // { src: 'plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }
         // { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
